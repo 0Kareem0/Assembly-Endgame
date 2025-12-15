@@ -1,0 +1,32 @@
+// pre-project plan
+
+the game is guessing the word and every time you fail some language disappears 
+and if u got a letter right it showed be shown where it is on the empty square
+
+this web is made with 4 sections:
+the first sections we will call it start empty
+the second section will be started 
+the third will be completed-win
+the forth will be completed-lose
+
+1-start empty:
+will have a header and a paragraph describing the game.
+and lets say lis for the language selection.
+and an empty square for the game
+and then letters from a to z 
+
+2-started:
+will have the same features as the start empty section
+but the difference will be when u click a letter and get it wrong a message will appear
+under the paragraph that says farewell html for example 
+and the words in the list will be disabled and have a skull on it and the game will progress
+
+3-completed-win:
+will show the completed word and a win message
+that says 'you win!' and on another line 'well done!'
+and a restart button
+
+4-completed-lose:
+will show the completed word and a lose message
+that says 'Game Over!' and on another line 'you lose! better start learning Assembly'
+and a restart button
