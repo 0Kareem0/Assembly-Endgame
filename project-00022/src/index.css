@@ -12,7 +12,7 @@ body {
     height: 100vh;
     display: flex;
     justify-content: center;
-    background-image:  url(../public/neon-grid-background_53876-91657.avif);
+    background-image:  url(/neon-grid-background_53876-91657.avif);
     background-size: cover;
     background-position: center;
   background-attachment: fixed;
