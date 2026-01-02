@@ -72,6 +72,7 @@ text-black
       New Game
     </button>
     </section>
+      <section>'day 2 its a break day'</section>
   </main>
 
 }
