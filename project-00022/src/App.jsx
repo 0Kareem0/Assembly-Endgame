@@ -1,12 +1,6 @@
 import {useState} from "react";
 import { languages } from "./languages"
 
-/**
- * Goal: Allow the user to start guessing the letters
- *
- * Challenge: Update the keyboard when a letter is right
- * or wrong.
- */
 
 export default function App() {
   const [currentWord, setCurrentWord] = useState("react")
