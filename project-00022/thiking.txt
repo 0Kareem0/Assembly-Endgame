@@ -1,0 +1,19 @@
+okay we finished the design now its time to do the logic
+first: we need to not hardcode the guess word like im doing for now ("react")
+how to do that i dont know but i remember i did something familiar in the meme project so i will look back,
+and try to apply it here my self
+second: we need to store the word somewhere by that i mean the word that the player have to guess,
+third: we need to make the keyboard functional if he guessed the letter right it becomes green,
+and will be added to the letter elements and if its wrong it will be red and one lang will go,
+by putting a dead emoji on it and ofc anything clicked can never be clicked again
+and after the game ends the keyboard will be unclickable and Grayed out
+__________________________________________________________________________________________________
+the second step:
+useState is used when a value can change over time and the UI needs to update when it changes.
+so cuz of that we will make the word in state but how to make it appair only when the user gets it right
+so my ideas is not in order rn but i have 2
+1 in the first step maybe we need type the word as the user type it
+2 we hide it and make it appair when the user gets it right
+the two of them is possible i think but i want the easier option
+the second option is wrong i just knew that ---> You never “show” or “hide” things manually in React.
+                                                 You only change state, and the UI reacts.

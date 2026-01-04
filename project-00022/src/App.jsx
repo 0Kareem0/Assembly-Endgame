@@ -1,8 +1,33 @@
 import {useState} from "react";
 import { languages } from "./languages"
 
+/**
+ * Goal: Allow the user to start guessing the letters
+ *
+ * Challenge: Update the keyboard when a letter is right
+ * or wrong.
+ */
+
 export default function App() {
   const [currentWord, setCurrentWord] = useState("react")
+    const [guessedLetters, setGuessedLetters] = useState([])
+    console.log(guessedLetters)
+
+
+
+    function handleGuessedLetters(letter) {
+        setGuessedLetters(prevLetters =>
+            prevLetters.includes(letter) ? [...prevLetters]
+                : [...prevLetters, letter])
+        if (currentWord.includes(letter)) {
+            console.log("letter is correct")
+
+        }else{
+            console.log("letter is wrong")
+        }
+    }
+
+
 
 
 const languagesEle = languages.map(lang => {
@@ -35,14 +60,22 @@ const languagesEle = languages.map(lang => {
   const alphabet = "abcdefghijklmnopqrstuvwxyz"
   const lettersMapping =alphabet.split("").map((letter,i)=>(
       <button
-          className="
-w-[35px] h-[35px]
-bg-[#FCBA29]
-border border-[#D7D7D7]
-rounded-[3px]
-cursor-pointer
-text-black
-"
+          className={`
+  w-[35px] h-[35px]
+  border border-[#D7D7D7]
+  rounded-[3px]
+  text-black
+  transition-colors duration-200
+  ${
+              guessedLetters.includes(letter)
+                  ? currentWord.includes(letter)
+                      ? "bg-green-500"
+                      : "bg-red-500"
+                  : "bg-[#FCBA29] hover:bg-yellow-400"
+          }
+`}
+
+    onClick={() => handleGuessedLetters(letter)}
           key={i}
       >{letter.toUpperCase()}
       </button>
@@ -72,7 +105,6 @@ text-black
       New Game
     </button>
     </section>
-      <section>'day 2 its a break day'</section>
   </main>
 
 }
