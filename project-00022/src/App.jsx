@@ -7,19 +7,17 @@ export default function App() {
     const [guessedLetters, setGuessedLetters] = useState([])
     console.log(guessedLetters)
 
+const wrongGuessCount = guessedLetters.filter(letter => !currentWord.includes(letter)).length
+    console.log(wrongGuessCount)
+
 
 
     function handleGuessedLetters(letter) {
         setGuessedLetters(prevLetters =>
             prevLetters.includes(letter) ? [...prevLetters]
                 : [...prevLetters, letter])
-        if (currentWord.includes(letter)) {
-            console.log("letter is correct")
-
-        }else{
-            console.log("letter is wrong")
-        }
     }
+
 
 
 
@@ -33,11 +31,22 @@ const languagesEle = languages.map(lang => {
 
   return (
     <span
+        className=" relative
+    before:content-['💀']
+    before:absolute
+    before:inset-0
+    before:flex
+    before:items-center
+    before:justify-center
+    before:bg-black/70
+    before:text-sm"
+
       key={lang.name}
       style={styles}
       className=" cursor-pointer px-3 py-1.5 text-xs font-semibold rounded-full whitespace-nowrap transition hover:brightness-110"
     >
       {lang.name}
+
     </span>
   );
 });
@@ -48,7 +57,7 @@ const languagesEle = languages.map(lang => {
       <span
       className=" w-[40px] h-[40px] bg-[#323232] flex items-center justify-center text-lg border-b "
           key={i}>
-        {letter.toUpperCase()}</span>
+        {guessedLetters.includes(letter)? letter.toUpperCase() : ""}</span>
   ))
 
   const alphabet = "abcdefghijklmnopqrstuvwxyz"
