@@ -22,28 +22,25 @@ const wrongGuessCount = guessedLetters.filter(letter => !currentWord.includes(le
 
 
 
-const languagesEle = languages.map(lang => {
+const languagesEle = languages.map((lang ,i) => {
   const styles = {
     backgroundColor: lang.backgroundColor,
     color: lang.color,
   };
 
+    const langIsLost = i < wrongGuessCount;
 
   return (
     <span
-        className=" relative
-    before:content-['💀']
-    before:absolute
-    before:inset-0
-    before:flex
-    before:items-center
-    before:justify-center
-    before:bg-black/70
-    before:text-sm"
 
       key={lang.name}
       style={styles}
-      className=" cursor-pointer px-3 py-1.5 text-xs font-semibold rounded-full whitespace-nowrap transition hover:brightness-110"
+      className={`cursor-pointer px-3 py-1.5 
+      text-xs font-semibold
+       rounded-full
+       whitespace-nowrap transition hover:brightness-110 
+        ${langIsLost ? "blur-sm lost" : ""}
+        `}
     >
       {lang.name}
 
