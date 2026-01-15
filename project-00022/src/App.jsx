@@ -10,7 +10,9 @@ export default function App() {
 const wrongGuessCount = guessedLetters.filter(letter => !currentWord.includes(letter)).length
     console.log(wrongGuessCount)
 
-
+    const gameLost =  wrongGuessCount === languages.length - 1
+    const gameWon = currentWord.split("").every(letter => guessedLetters.includes((letter)))
+    const gameOver = gameLost || gameWon
 
     function handleGuessedLetters(letter) {
         setGuessedLetters(prevLetters =>
@@ -52,7 +54,7 @@ const languagesEle = languages.map((lang ,i) => {
   const letterElements = currentWord.split("").map((letter,i) => (
 
       <span
-      className=" w-[40px] h-[40px] bg-[#323232] flex items-center justify-center text-lg border-b "
+      className=" w-[40px] h-[40px] bg-[#323232] flex items-center justify-center text-lg border-b  "
           key={i}>
         {guessedLetters.includes(letter)? letter.toUpperCase() : ""}</span>
   ))
@@ -61,6 +63,7 @@ const languagesEle = languages.map((lang ,i) => {
   const lettersMapping =alphabet.split("").map((letter,i)=>(
       <button
           className={`
+   
   w-[35px] h-[35px]
   border border-[#D7D7D7]
   rounded-[3px]
@@ -81,13 +84,14 @@ const languagesEle = languages.map((lang ,i) => {
       </button>
   ))
 
-  return <main className="flex flex-col items-center "  >
+  return <main className="flex flex-col items-center  "  >
     <header>
       <h1 className=" text-center text-[#F9F4DA] text-lg ">Assembly Endgame</h1>
     <p className=" text-center text-sm text-[#8E8E8E] max-w-[350px]">Guess the word in under 8 attempts to keep the programming world safe from Assembly!</p>
     </header>
-    <section className="text-center border-s-[#10A95B] bg-[#10A95B] rounded-sm text-xl  text-[#F9F4DA] mt-5 w-88 h-14 ">you win! <br /> well done🎉</section>
-<section className="flex flex-wrap justify-center gap-2 pt-8 mt-6 max-w-md mx-auto">
+      {gameWon ? <section className="text-center border-s-[#10A95B] bg-[#10A95B] rounded-sm text-xl  text-[#F9F4DA] mt-5 w-88 h-14 ">you win! <br /> well done🎉</section> :null}
+      {gameLost ? <section className="text-center border-s-[#BA2A2A] bg-[#BA2A2A] rounded-sm text-xl  text-[#F9F4DA] mt-5 w-full ">Game over! <br /> You lose! Better start learning Assembly 😭</section> :null}
+      <section className="flex flex-wrap justify-center gap-2 pt-8 mt-6 max-w-md mx-auto">
   {languagesEle}
 </section>
 
@@ -99,11 +103,11 @@ const languagesEle = languages.map((lang ,i) => {
  ">{lettersMapping}</section>
 
     <section className="flex justify-center pt-4 mt-6 max-w-md mx-auto" >
-    <button
-        className=" text-black bg-[#11B5E5] border border-[#D7D7D7] rounded w-[225px] h-[40px] px-3 py-1.5 block mx-auto cursor-pointer"
-    >
-      New Game
-    </button>
+        { gameOver ? <button
+            className=" text-black bg-[#11B5E5] border border-[#D7D7D7] rounded w-[225px] h-[40px] px-3 py-1.5 block mx-auto cursor-pointer"
+        >
+            New Game
+        </button> : null}
     </section>
   </main>
 
