@@ -1,14 +1,14 @@
 import {useState} from "react";
 import { languages } from "./languages"
 import {getFarewellText , getRandomWord} from "./utils.js";
+import Confetti from 'react-confetti'
+
 
 export default function App() {
-  const [currentWord, setCurrentWord] = useState(getRandomWord())
+  const [currentWord, setCurrentWord] = useState(() =>getRandomWord())
     const [guessedLetters, setGuessedLetters] = useState([])
-    console.log(guessedLetters)
 
 const wrongGuessCount = guessedLetters.filter(letter => !currentWord.includes(letter)).length
-    console.log(wrongGuessCount)
 
     const gameLost =  wrongGuessCount === languages.length - 1
     const gameWon = currentWord.split("").every(letter => guessedLetters.includes((letter)))
@@ -16,7 +16,11 @@ const wrongGuessCount = guessedLetters.filter(letter => !currentWord.includes(le
 
     const lastGuessedLetter = guessedLetters[guessedLetters.length - 1]
     const isLastGuessIncorrect = lastGuessedLetter && !currentWord.includes(lastGuessedLetter)
-    console.log(isLastGuessIncorrect)
+
+    function reGame (){
+        setCurrentWord(getRandomWord())
+        setGuessedLetters([])
+    }
 
     function handleGuessedLetters(letter) {
         setGuessedLetters(prevLetters =>
@@ -54,15 +58,24 @@ const languagesEle = languages.map((lang ,i) => {
 });
 
 
-  const letterElements = currentWord.split("").map((letter,i) => (
+    const letterElements = currentWord.split("").map((letter, i) => {
+        const shouldRevealLetter = gameLost || guessedLetters.includes(letter)
+        return (
+            <span
+                key={i}
+                className={`w-[40px] h-[40px] bg-[#323232] flex items-center justify-center text-lg border-b
+        ${
+             gameLost && !guessedLetters.includes(letter)
+             ? "text-red-500"
+             : ""
+                }
+     `}>
+      {shouldRevealLetter ? letter.toUpperCase() : ""}
+    </span>
+        )
+    })
 
-      <span
-      className=" w-[40px] h-[40px] bg-[#323232] flex items-center justify-center text-lg border-b  "
-          key={i}>
-        {guessedLetters.includes(letter)? letter.toUpperCase() : ""}</span>
-  ))
-
-  const alphabet = "abcdefghijklmnopqrstuvwxyz"
+    const alphabet = "abcdefghijklmnopqrstuvwxyz"
   const lettersMapping =alphabet.split("").map((letter,i)=>(
       <button
           className={`
@@ -85,11 +98,13 @@ const languagesEle = languages.map((lang ,i) => {
 
     onClick={() => handleGuessedLetters(letter)}
           key={i}
+
       >{letter.toUpperCase()}
       </button>
   ))
 
-  return <main className="flex flex-col items-center  "  >
+  return <main className="flex flex-col items-center"  >
+      {gameWon && <Confetti />}
     <header>
       <h1 className=" text-center text-[#F9F4DA] text-lg ">Assembly Endgame</h1>
     <p className=" text-center text-sm text-[#8E8E8E] max-w-[350px]">Guess the word in under 8 attempts to keep the programming world safe from Assembly!</p>
@@ -123,6 +138,7 @@ const languagesEle = languages.map((lang ,i) => {
     <section className="flex justify-center pt-4 mt-6 max-w-md mx-auto" >
         { gameOver ? <button
             className=" text-black bg-[#11B5E5] border border-[#D7D7D7] rounded w-[225px] h-[40px] px-3 py-1.5 block mx-auto cursor-pointer"
+        onClick={reGame}
         >
             New Game
         </button> : null}
