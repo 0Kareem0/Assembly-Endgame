@@ -29,7 +29,7 @@ const wrongGuessCount = guessedLetters.filter(letter => !currentWord.includes(le
     }
 
 
-const languagesEle = languages.map((lang ,i) => {
+const languagesEle = languages.map((lang ,i) => { 
   const styles = {
     backgroundColor: lang.backgroundColor,
     color: lang.color,
