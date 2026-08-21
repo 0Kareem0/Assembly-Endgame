@@ -1,0 +1,8 @@
+{
+  "name": "assembly-endgame-root",
+  "private": true,
+  "scripts": {
+    "build": "cd project-00022 && npm install && npm run build",
+    "dev": "cd project-00022 && npm run dev"
+  }
+}
