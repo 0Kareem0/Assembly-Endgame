@@ -229,7 +229,7 @@ export default function App() {
         {/* Header Title */}
         <header className="text-center w-full mb-2">
           <h1 className="text-2xl sm:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-cyan-200 to-indigo-200 tracking-tight">
-            Stickman Hangman
+            Hangman Escape
           </h1>
           <p className="text-slate-400 text-xs sm:text-sm mt-1 max-w-md mx-auto">
             Guess the mystery word to save the stickman before the trapdoor drops!
