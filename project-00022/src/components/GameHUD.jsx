@@ -28,10 +28,17 @@ export default function GameHUD({
         </button>
         <button
           onClick={onToggleMusic}
-          className="w-8 h-8 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 flex items-center justify-center text-xs transition cursor-pointer"
-          title={musicMuted ? "Unmute Music" : "Mute Music"}
+          className="h-8 px-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 flex items-center justify-center gap-1 text-xs transition cursor-pointer"
+          title={musicMuted ? "Unmute Ambient Soundtrack" : "Mute Ambient Soundtrack"}
         >
-          {musicMuted ? "🔇" : "🎵"}
+          <span>{musicMuted ? "🔇" : "🎵"}</span>
+          {!musicMuted && (
+            <div className="flex items-end gap-0.5 h-3">
+              <span className="w-0.5 bg-cyan-400 animate-pulse h-full" />
+              <span className="w-0.5 bg-amber-400 animate-pulse h-2/3" />
+              <span className="w-0.5 bg-purple-400 animate-pulse h-4/5" />
+            </div>
+          )}
         </button>
         <button
           onClick={onToggleSfx}

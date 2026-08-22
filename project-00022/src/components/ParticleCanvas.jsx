@@ -19,7 +19,8 @@ export default function ParticleCanvas({ isShaking = false }) {
     };
     window.addEventListener("resize", handleResize);
 
-    const particles = Array.from({ length: 45 }, () => ({
+    // Ambient floating particles
+    const ambientParticles = Array.from({ length: 50 }, () => ({
       x: Math.random() * width,
       y: Math.random() * height,
       size: Math.random() * 2.5 + 1,
@@ -29,10 +30,36 @@ export default function ParticleCanvas({ isShaking = false }) {
       color: Math.random() > 0.5 ? "56, 189, 248" : "245, 158, 11",
     }));
 
+    // Interactive cursor sparks
+    const cursorSparks = [];
+
+    const handlePointerMove = (e) => {
+      const x = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+      const y = e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0);
+
+      if (x > 0 && y > 0) {
+        for (let i = 0; i < 2; i++) {
+          cursorSparks.push({
+            x,
+            y,
+            size: Math.random() * 3 + 1.5,
+            speedX: (Math.random() - 0.5) * 2.5,
+            speedY: (Math.random() - 0.5) * 2.5,
+            opacity: 1,
+            life: 1,
+            color: Math.random() > 0.5 ? "56, 189, 248" : "251, 191, 36",
+          });
+        }
+      }
+    };
+
+    window.addEventListener("pointermove", handlePointerMove);
+
     const render = () => {
       ctx.clearRect(0, 0, width, height);
 
-      particles.forEach((p) => {
+      // Render Ambient Floating Particles
+      ambientParticles.forEach((p) => {
         p.x += p.speedX;
         p.y += p.speedY;
 
@@ -51,6 +78,27 @@ export default function ParticleCanvas({ isShaking = false }) {
         ctx.fill();
       });
 
+      // Render Cursor Sparks
+      for (let i = cursorSparks.length - 1; i >= 0; i--) {
+        const s = cursorSparks[i];
+        s.x += s.speedX;
+        s.y += s.speedY;
+        s.life -= 0.04;
+        s.size *= 0.95;
+
+        if (s.life <= 0 || s.size <= 0.2) {
+          cursorSparks.splice(i, 1);
+          continue;
+        }
+
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${s.color}, ${s.life})`;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = `rgba(${s.color}, 0.9)`;
+        ctx.fill();
+      }
+
       animationFrameId = requestAnimationFrame(render);
     };
 
@@ -58,6 +106,7 @@ export default function ParticleCanvas({ isShaking = false }) {
 
     return () => {
       window.removeEventListener("resize", handleResize);
+      window.removeEventListener("pointermove", handlePointerMove);
       cancelAnimationFrame(animationFrameId);
     };
   }, []);

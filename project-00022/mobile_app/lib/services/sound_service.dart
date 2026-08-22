@@ -26,8 +26,9 @@ class SoundService {
   static void play(String type) {
     if (_sfxMuted) return;
 
-    // Haptic & Sound triggers for devices
-    if (type == 'click' || type == 'hover') {
+    if (type == 'intro_boom') {
+      HapticFeedback.heavyImpact();
+    } else if (type == 'click' || type == 'hover') {
       HapticFeedback.selectionClick();
     } else if (type == 'count') {
       HapticFeedback.lightImpact();
