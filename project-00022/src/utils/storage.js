@@ -42,7 +42,7 @@ export function setPlayerName(name) {
       localStorage.setItem(LOCAL_STORAGE_SCORES_KEY, JSON.stringify(scores));
     }
   } catch {
-    // Ignore error
+    // storage error ignored
   }
 }
 
@@ -58,7 +58,7 @@ export function setPlayerAvatar(avatarIcon) {
   try {
     localStorage.setItem(LOCAL_STORAGE_AVATAR_KEY, avatarIcon);
   } catch {
-    // Ignore error
+    // storage error ignored
   }
 }
 
@@ -105,7 +105,9 @@ export function getSettings() {
 export function saveSettings(settings) {
   try {
     localStorage.setItem(LOCAL_STORAGE_SETTINGS_KEY, JSON.stringify(settings));
-  } catch {}
+  } catch {
+    // storage error ignored
+  }
 }
 
 export function saveGameResult({ won, score, timeTaken, wrongGuessCount = 0 }) {
@@ -213,5 +215,7 @@ export function clearLeaderboardData() {
     localStorage.removeItem(LOCAL_STORAGE_SCORES_KEY);
     localStorage.removeItem(LOCAL_STORAGE_STATS_KEY);
     localStorage.removeItem(LOCAL_STORAGE_PROFILE_KEY);
-  } catch {}
+  } catch {
+    // storage error ignored
+  }
 }

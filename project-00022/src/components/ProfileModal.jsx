@@ -7,7 +7,6 @@ import {
   getPlayerAvatar,
   setPlayerAvatar,
   getProfileData,
-  getLeaderboardData,
 } from "../utils/storage";
 import { playSound } from "../utils/sound";
 
@@ -19,12 +18,10 @@ export default function ProfileModal({ isOpen, onClose, onDataChange }) {
   if (!isOpen) return null;
 
   const profile = getProfileData();
-  const { stats } = getLeaderboardData();
   const unlocked = new Set(profile.unlockedAchievements || []);
 
   const xpCurrent = profile.xp % 500;
   const xpPercent = Math.min(100, Math.round((xpCurrent / 500) * 100));
-  const winRate = stats.gamesPlayed > 0 ? Math.round((stats.wins / stats.gamesPlayed) * 100) : 0;
 
   const handleSaveName = (e) => {
     e.preventDefault();

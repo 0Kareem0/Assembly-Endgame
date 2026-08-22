@@ -19,6 +19,8 @@ export const wordCategories = {
   ]
 };
 
+export const categories = wordCategories;
+
 export function getRandomWord(category = "General") {
   const selectedList = wordCategories[category] || wordCategories.General;
   const randomIndex = Math.floor(Math.random() * selectedList.length);

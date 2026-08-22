@@ -4,7 +4,6 @@ let audioCtx = null;
 let musicMuted = false;
 let sfxMuted = false;
 let musicOsc = null;
-let musicGain = null;
 let musicInterval = null;
 
 function getAudioContext() {
@@ -80,11 +79,11 @@ export function startAmbientMusic() {
 
         noteIdx = (noteIdx + 1) % scale.length;
       } catch {
-        // Ignore audio errors
+        // sound error ignored
       }
     }, 1800);
   } catch {
-    // Ignore audio errors
+    // sound error ignored
   }
 }
 
@@ -96,7 +95,9 @@ export function stopAmbientMusic() {
   if (musicOsc) {
     try {
       musicOsc.stop();
-    } catch {}
+    } catch {
+      // sound error ignored
+    }
     musicOsc = null;
   }
 }
@@ -218,6 +219,6 @@ export function playSound(type) {
       });
     }
   } catch {
-    // Ignore audio context errors
+    // sound error ignored
   }
 }

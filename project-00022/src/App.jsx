@@ -27,11 +27,9 @@ import {
   startAmbientMusic,
   setMusicMuted,
   setSfxMuted,
-  getMusicMuted,
-  getSfxMuted,
 } from "./utils/sound";
 
-export const GameState = {
+const GameState = {
   INTRO: "INTRO",
   MENU: "MENU",
   COUNTDOWN: "COUNTDOWN",
@@ -184,7 +182,6 @@ export default function App() {
         wordLength: currentWord.length,
         streak: currentStreak,
       });
-      setLastScore(score);
 
       const res = saveGameResult({
         won: true,
@@ -193,15 +190,17 @@ export default function App() {
         wrongGuessCount,
       });
 
-      if (res) {
-        setResultMeta(res);
-        if (res.newAchievementsUnlocked?.length > 0) {
-          playSound("achievement");
+      queueMicrotask(() => {
+        setLastScore(score);
+        if (res) {
+          setResultMeta(res);
+          if (res.newAchievementsUnlocked?.length > 0) {
+            playSound("achievement");
+          }
         }
-      }
-
-      refreshProfileAndData();
-      setGameState(GameState.GAME_OVER);
+        refreshProfileAndData();
+        setGameState(GameState.GAME_OVER);
+      });
     } else if (gameLost) {
       playSound("loss");
 
@@ -212,9 +211,11 @@ export default function App() {
         wrongGuessCount,
       });
 
-      if (res) setResultMeta(res);
-      refreshProfileAndData();
-      setGameState(GameState.GAME_OVER);
+      queueMicrotask(() => {
+        if (res) setResultMeta(res);
+        refreshProfileAndData();
+        setGameState(GameState.GAME_OVER);
+      });
     }
   }, [gameWon, gameLost, gameState, timeTaken, wrongGuessCount, currentWord, currentStreak, refreshProfileAndData]);
 
