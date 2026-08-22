@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import Confetti from "react-confetti";
 import HangmanCanvas from "./components/HangmanCanvas";
 import LeaderboardModal from "./components/LeaderboardModal";
-import { getLeaderboardData, saveGameResult } from "./utils/storage";
+import { getLeaderboardData, saveGameResult, getPlayerName } from "./utils/storage";
 import { wordCategories, getRandomWord, calculateScore, getFarewellText } from "./utils";
 import { playSound, getMuted, setMuted } from "./utils/sound";
 
@@ -41,42 +41,6 @@ export default function App() {
     return () => clearInterval(interval);
   }, [gameOver]);
 
-  // Handle Game Over sound & leaderboard registration
-  useEffect(() => {
-    if (gameWon) {
-      playSound("win");
-      const score = calculateScore({
-        timeTaken,
-        wrongGuessCount,
-        maxAttempts,
-        wordLength: currentWord.length,
-        streak: currentStreak,
-      });
-      setLastScore(score);
-      const updated = saveGameResult({
-        won: true,
-        score,
-        timeTaken,
-        playerName: "Player",
-      });
-      if (updated && updated.stats) {
-        setCurrentStreak(updated.stats.currentStreak);
-      }
-    } else if (gameLost) {
-      playSound("loss");
-      const updated = saveGameResult({
-        won: false,
-        score: 0,
-        timeTaken,
-        playerName: "Player",
-      });
-      if (updated && updated.stats) {
-        setCurrentStreak(0);
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gameWon, gameLost]);
-
   // New Game reset
   const reGame = useCallback((newCategory = category) => {
     setCategory(newCategory);
@@ -92,16 +56,55 @@ export default function App() {
       if (gameOver) return;
       if (guessedLetters.includes(letter)) return;
 
+      const newGuessed = [...guessedLetters, letter];
       const isCorrect = currentWord.includes(letter);
+
       if (isCorrect) {
         playSound("correct");
       } else {
         playSound("wrong");
       }
 
-      setGuessedLetters((prev) => [...prev, letter]);
+      setGuessedLetters(newGuessed);
+
+      // Check game end immediately in event handler
+      const wrongCount = newGuessed.filter((l) => !currentWord.includes(l)).length;
+      const isWon = currentWord.split("").every((l) => newGuessed.includes(l));
+      const isLost = wrongCount >= maxAttempts;
+
+      if (isWon) {
+        playSound("win");
+        const score = calculateScore({
+          timeTaken,
+          wrongGuessCount: wrongCount,
+          maxAttempts,
+          wordLength: currentWord.length,
+          streak: currentStreak,
+        });
+        setLastScore(score);
+        const updated = saveGameResult({
+          won: true,
+          score,
+          timeTaken,
+          playerName: getPlayerName(),
+        });
+        if (updated && updated.stats) {
+          setCurrentStreak(updated.stats.currentStreak);
+        }
+      } else if (isLost) {
+        playSound("loss");
+        const updated = saveGameResult({
+          won: false,
+          score: 0,
+          timeTaken,
+          playerName: getPlayerName(),
+        });
+        if (updated && updated.stats) {
+          setCurrentStreak(0);
+        }
+      }
     },
-    [gameOver, guessedLetters, currentWord]
+    [gameOver, guessedLetters, currentWord, maxAttempts, timeTaken, currentStreak]
   );
 
   // Physical Keyboard Support
@@ -205,11 +208,11 @@ export default function App() {
           </button>
 
           {/* Live Timer & Streak */}
-          <div className="flex items-center gap-3 text-xs font-bold">
-            <span className="bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl text-cyan-400 font-mono">
+          <div className="flex items-center gap-2 sm:gap-3 text-xs font-bold">
+            <span className="bg-slate-900 border border-slate-800 px-2.5 py-1.5 rounded-xl text-cyan-400 font-mono">
               ⏱️ {timeTaken}s
             </span>
-            <span className="bg-amber-950/60 border border-amber-500/40 text-amber-300 px-3 py-1.5 rounded-xl">
+            <span className="bg-amber-950/60 border border-amber-500/40 text-amber-300 px-2.5 py-1.5 rounded-xl">
               🔥 Streak: {currentStreak}
             </span>
           </div>
@@ -219,7 +222,7 @@ export default function App() {
             onClick={() => setIsLeaderboardOpen(true)}
             className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 text-xs font-extrabold flex items-center gap-1 transition shadow-md shadow-amber-500/20 cursor-pointer"
           >
-            🏆 Stats
+            🏆 Leaderboard
           </button>
         </div>
 
@@ -261,13 +264,19 @@ export default function App() {
         {/* Dynamic Status Section */}
         <section className="w-full max-w-md min-h-[64px] flex items-center justify-center my-1">
           {gameWon && (
-            <div className="w-full animate-pop bg-gradient-to-r from-emerald-900/90 to-teal-900/90 border-2 border-emerald-400/80 text-emerald-100 rounded-2xl p-3 text-center shadow-lg shadow-emerald-950">
+            <div className="w-full animate-pop bg-gradient-to-r from-emerald-900/90 to-teal-900/90 border-2 border-emerald-400/80 text-emerald-100 rounded-2xl p-3 text-center shadow-lg shadow-emerald-950 flex flex-col items-center">
               <h2 className="text-base sm:text-lg font-bold text-emerald-300">
                 🎉 Hero Rescued! Score: {lastScore} pts
               </h2>
-              <p className="text-xs text-emerald-200/90 mt-0.5">
-                Awesome speed! You saved him in {timeTaken} seconds!
+              <p className="text-xs text-emerald-200/90 mt-0.5 mb-2">
+                Awesome speed! Saved in {timeTaken} seconds!
               </p>
+              <button
+                onClick={() => setIsLeaderboardOpen(true)}
+                className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold px-3 py-1 rounded-lg transition shadow cursor-pointer"
+              >
+                View High Scores 🏆
+              </button>
             </div>
           )}
 
@@ -328,6 +337,10 @@ export default function App() {
       <LeaderboardModal
         isOpen={isLeaderboardOpen}
         onClose={() => setIsLeaderboardOpen(false)}
+        onDataChange={() => {
+          const stats = getLeaderboardData().stats;
+          if (stats) setCurrentStreak(stats.currentStreak || 0);
+        }}
       />
     </main>
   );
