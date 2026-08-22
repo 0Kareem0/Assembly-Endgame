@@ -1,347 +1,447 @@
 import { useState, useEffect, useCallback } from "react";
-import Confetti from "react-confetti";
-import HangmanCanvas from "./components/HangmanCanvas";
+import confetti from "canvas-confetti";
+import ParticleCanvas from "./components/ParticleCanvas";
+import IntroSplash from "./components/IntroSplash";
+import MainMenu from "./components/MainMenu";
+import CountdownOverlay from "./components/CountdownOverlay";
+import GameHUD from "./components/GameHUD";
+import PauseOverlay from "./components/PauseOverlay";
+import HowToPlayModal from "./components/HowToPlayModal";
+import ProfileModal from "./components/ProfileModal";
+import SettingsModal from "./components/SettingsModal";
+import GameOverModal from "./components/GameOverModal";
 import LeaderboardModal from "./components/LeaderboardModal";
-import { getLeaderboardData, saveGameResult, getPlayerName } from "./utils/storage";
-import { wordCategories, getRandomWord, calculateScore, getFarewellText } from "./utils";
-import { playSound, getMuted, setMuted } from "./utils/sound";
+import HangmanCanvas from "./components/HangmanCanvas";
+import { categories, getFarewellText, calculateScore } from "./utils";
+import {
+  saveGameResult,
+  getLeaderboardData,
+  getProfileData,
+  getPlayerAvatar,
+  getPlayerName,
+  getSettings,
+  saveSettings,
+} from "./utils/storage";
+import {
+  playSound,
+  startAmbientMusic,
+  setMusicMuted,
+  setSfxMuted,
+  getMusicMuted,
+  getSfxMuted,
+} from "./utils/sound";
+
+export const GameState = {
+  INTRO: "INTRO",
+  MENU: "MENU",
+  COUNTDOWN: "COUNTDOWN",
+  PLAYING: "PLAYING",
+  PAUSED: "PAUSED",
+  GAME_OVER: "GAME_OVER",
+};
 
 export default function App() {
+  const [gameState, setGameState] = useState(GameState.INTRO);
+  const [activeModal, setActiveModal] = useState(null); // 'HOW_TO_PLAY', 'PROFILE', 'SETTINGS', 'LEADERBOARD'
+
+  // Settings
+  const [settings, setSettingsState] = useState(() => getSettings());
+
+  // Category & Gameplay
   const [category, setCategory] = useState("General");
-  const [currentWord, setCurrentWord] = useState(() => getRandomWord("General"));
-  const [guessedLetters, setGuessedLetters] = useState([]);
+  const [currentWord, setCurrentWord] = useState("");
+  const [guessedLetters, setGuessedLetters] = useState(new Set());
   const [timeTaken, setTimeTaken] = useState(0);
-  const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
-  const [muted, setMutedState] = useState(getMuted());
   const [lastScore, setLastScore] = useState(0);
   const [currentStreak, setCurrentStreak] = useState(() => getLeaderboardData().stats.currentStreak || 0);
 
+  // Profile data
+  const [profile, setProfile] = useState(() => getProfileData());
+  const [avatar, setAvatar] = useState(() => getPlayerAvatar());
+  const [playerName, setPlayerNameState] = useState(() => getPlayerName());
+
+  // Result metadata (XP gained, level up, high score)
+  const [resultMeta, setResultMeta] = useState(null);
+
+  // Screen shake on wrong guess
+  const [isShaking, setIsShaking] = useState(false);
+
   const maxAttempts = 8;
-  const wrongGuessCount = guessedLetters.filter(
+  const wrongGuessCount = Array.from(guessedLetters).filter(
     (letter) => !currentWord.includes(letter)
   ).length;
 
-  const attemptsRemaining = maxAttempts - wrongGuessCount;
-  const gameLost = wrongGuessCount >= maxAttempts;
   const gameWon =
     currentWord.length > 0 &&
-    currentWord.split("").every((letter) => guessedLetters.includes(letter));
-  const gameOver = gameLost || gameWon;
+    currentWord.split("").every((letter) => guessedLetters.has(letter));
+  const gameLost = wrongGuessCount >= maxAttempts;
 
-  const lastGuessedLetter = guessedLetters[guessedLetters.length - 1];
-  const isLastGuessIncorrect =
-    lastGuessedLetter && !currentWord.includes(lastGuessedLetter);
-
-  // Timer effect
+  // Initialize sound settings
   useEffect(() => {
-    if (gameOver) return;
-    const interval = setInterval(() => {
-      setTimeTaken((prev) => prev + 1);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [gameOver]);
+    setMusicMuted(settings.musicMuted);
+    setSfxMuted(settings.sfxMuted);
+  }, [settings]);
 
-  // New Game reset
-  const reGame = useCallback((newCategory = category) => {
-    setCategory(newCategory);
-    setCurrentWord(getRandomWord(newCategory));
-    setGuessedLetters([]);
+  const refreshProfileAndData = useCallback(() => {
+    setProfile(getProfileData());
+    setAvatar(getPlayerAvatar());
+    setPlayerNameState(getPlayerName());
+    setCurrentStreak(getLeaderboardData().stats.currentStreak || 0);
+  }, []);
+
+  // Prepare a fresh word state without starting timer
+  const prepareNewWord = useCallback((catName) => {
+    const list = categories[catName || category] || categories.General;
+    const word = list[Math.floor(Math.random() * list.length)];
+    setCurrentWord(word);
+    setGuessedLetters(new Set());
     setTimeTaken(0);
     setLastScore(0);
   }, [category]);
 
-  // Handle Letter Guesses
-  const handleGuessedLetters = useCallback(
-    (letter) => {
-      if (gameOver) return;
-      if (guessedLetters.includes(letter)) return;
+  // Handle game start trigger: MENU -> COUNTDOWN
+  const handleStartGame = (catName) => {
+    if (catName) setCategory(catName);
+    prepareNewWord(catName);
+    setGameState(GameState.COUNTDOWN);
+    startAmbientMusic();
+  };
 
-      const newGuessed = [...guessedLetters, letter];
+  // Timer Tick - ONLY active when gameState === GameState.PLAYING
+  useEffect(() => {
+    let timer = null;
+    if (gameState === GameState.PLAYING && !gameWon && !gameLost) {
+      timer = setInterval(() => {
+        setTimeTaken((prev) => prev + 1);
+      }, 1000);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [gameState, gameWon, gameLost]);
+
+  // Handle letter guess
+  const handleGuess = useCallback(
+    (letter) => {
+      if (gameState !== GameState.PLAYING || gameWon || gameLost || guessedLetters.has(letter)) {
+        return;
+      }
+
       const isCorrect = currentWord.includes(letter);
+
+      setGuessedLetters((prev) => {
+        const next = new Set(prev);
+        next.add(letter);
+        return next;
+      });
 
       if (isCorrect) {
         playSound("correct");
       } else {
         playSound("wrong");
-      }
-
-      setGuessedLetters(newGuessed);
-
-      // Check game end immediately in event handler
-      const wrongCount = newGuessed.filter((l) => !currentWord.includes(l)).length;
-      const isWon = currentWord.split("").every((l) => newGuessed.includes(l));
-      const isLost = wrongCount >= maxAttempts;
-
-      if (isWon) {
-        playSound("win");
-        const score = calculateScore({
-          timeTaken,
-          wrongGuessCount: wrongCount,
-          maxAttempts,
-          wordLength: currentWord.length,
-          streak: currentStreak,
-        });
-        setLastScore(score);
-        const updated = saveGameResult({
-          won: true,
-          score,
-          timeTaken,
-          playerName: getPlayerName(),
-        });
-        if (updated && updated.stats) {
-          setCurrentStreak(updated.stats.currentStreak);
-        }
-      } else if (isLost) {
-        playSound("loss");
-        const updated = saveGameResult({
-          won: false,
-          score: 0,
-          timeTaken,
-          playerName: getPlayerName(),
-        });
-        if (updated && updated.stats) {
-          setCurrentStreak(0);
+        if (settings.screenShake) {
+          setIsShaking(true);
+          setTimeout(() => setIsShaking(false), 300);
         }
       }
     },
-    [gameOver, guessedLetters, currentWord, maxAttempts, timeTaken, currentStreak]
+    [gameState, gameWon, gameLost, guessedLetters, currentWord, settings.screenShake]
   );
 
-  // Physical Keyboard Support
+  // Keyboard shortcut listener
   useEffect(() => {
-    function handleKeyDown(e) {
-      if (e.key === "Enter" || e.key === " ") {
-        if (gameOver) {
-          reGame();
-        }
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        if (gameState === GameState.PLAYING) setGameState(GameState.PAUSED);
+        else if (gameState === GameState.PAUSED) setGameState(GameState.PLAYING);
+        else if (activeModal) setActiveModal(null);
         return;
       }
-      if (gameOver) return;
-      const key = e.key.toLowerCase();
-      if (key >= "a" && key <= "z" && key.length === 1) {
-        handleGuessedLetters(key);
+
+      if (gameState !== GameState.PLAYING) return;
+
+      const letter = e.key.toLowerCase();
+      if (/^[a-z]$/.test(letter)) {
+        handleGuess(letter);
       }
-    }
+    };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [gameOver, handleGuessedLetters, reGame]);
+  }, [gameState, activeModal, handleGuess]);
 
-  // Toggle Mute
-  const toggleMute = () => {
-    const nextMute = !muted;
-    setMuted(nextMute);
-    setMutedState(nextMute);
+  // Game Won / Lost trigger effect
+  useEffect(() => {
+    if (gameState !== GameState.PLAYING) return;
+
+    if (gameWon) {
+      playSound("win");
+      confetti({ particleCount: 70, spread: 80, origin: { y: 0.6 } });
+
+      const score = calculateScore({
+        timeTaken,
+        wrongGuessCount,
+        maxAttempts,
+        wordLength: currentWord.length,
+        streak: currentStreak,
+      });
+      setLastScore(score);
+
+      const res = saveGameResult({
+        won: true,
+        score,
+        timeTaken,
+        wrongGuessCount,
+      });
+
+      if (res) {
+        setResultMeta(res);
+        if (res.newAchievementsUnlocked?.length > 0) {
+          playSound("achievement");
+        }
+      }
+
+      refreshProfileAndData();
+      setGameState(GameState.GAME_OVER);
+    } else if (gameLost) {
+      playSound("loss");
+
+      const res = saveGameResult({
+        won: false,
+        score: 0,
+        timeTaken,
+        wrongGuessCount,
+      });
+
+      if (res) setResultMeta(res);
+      refreshProfileAndData();
+      setGameState(GameState.GAME_OVER);
+    }
+  }, [gameWon, gameLost, gameState, timeTaken, wrongGuessCount, currentWord, currentStreak, refreshProfileAndData]);
+
+  // Toggle Sound controls
+  const handleToggleMusic = () => {
+    const next = !settings.musicMuted;
+    const updated = { ...settings, musicMuted: next };
+    setSettingsState(updated);
+    saveSettings(updated);
+    setMusicMuted(next);
   };
 
-  // Letter Reveal Boxes
-  const letterElements = currentWord.split("").map((letter, i) => {
-    const shouldRevealLetter = gameLost || guessedLetters.includes(letter);
-    const isGuessedCorrectly = guessedLetters.includes(letter);
-    const isMissedLetter = gameLost && !isGuessedCorrectly;
+  const handleToggleSfx = () => {
+    const next = !settings.sfxMuted;
+    const updated = { ...settings, sfxMuted: next };
+    setSettingsState(updated);
+    saveSettings(updated);
+    setSfxMuted(next);
+  };
 
-    return (
-      <span
-        key={i}
-        className={`w-9 h-11 sm:w-11 sm:h-13 md:w-13 md:h-15 flex items-center justify-center font-mono-code text-xl sm:text-2xl font-extrabold rounded-xl border-2 transition-all shadow-md ${
-          isMissedLetter
-            ? "border-rose-500 bg-rose-950/80 text-rose-400 animate-pulse"
-            : isGuessedCorrectly
-            ? "border-emerald-500 bg-emerald-950/80 text-emerald-300 shadow-emerald-500/20 animate-pop"
-            : "border-slate-700/80 bg-slate-900/90 text-transparent shadow-inner"
-        }`}
-      >
-        {shouldRevealLetter ? letter.toUpperCase() : ""}
-      </span>
-    );
-  });
+  const handleToggleScreenShake = () => {
+    const updated = { ...settings, screenShake: !settings.screenShake };
+    setSettingsState(updated);
+    saveSettings(updated);
+  };
 
-  // QWERTY Virtual Keyboard
+  // Virtual keyboard layout
   const keyboardRows = [
     ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
     ["a", "s", "d", "f", "g", "h", "j", "k", "l"],
     ["z", "x", "c", "v", "b", "n", "m"],
   ];
 
-  const renderKeyButton = (letter) => {
-    const isGuessed = guessedLetters.includes(letter);
-    const isCorrect = isGuessed && currentWord.includes(letter);
-    const isWrong = isGuessed && !currentWord.includes(letter);
-
-    let keyStyle =
-      "bg-[#FCBA29] hover:bg-yellow-300 active:scale-95 text-slate-950 shadow-yellow-500/20 font-bold";
-    if (isCorrect) {
-      keyStyle =
-        "bg-emerald-500 text-slate-950 font-extrabold shadow-emerald-500/30 border-emerald-400";
-    } else if (isWrong) {
-      keyStyle =
-        "bg-slate-850 text-slate-600 border border-slate-800/80 line-through opacity-40 cursor-not-allowed";
-    }
-
-    return (
-      <button
-        key={letter}
-        disabled={isGuessed || gameOver}
-        aria-label={`Letter ${letter}`}
-        onClick={() => handleGuessedLetters(letter)}
-        className={`min-w-[28px] sm:min-w-[36px] md:min-w-[42px] h-10 sm:h-11 flex-1 max-w-[44px] rounded-lg text-xs sm:text-sm md:text-base transition-all duration-150 shadow-md flex items-center justify-center uppercase select-none ${keyStyle} ${
-          gameOver ? "opacity-60 cursor-not-allowed pointer-events-none" : "cursor-pointer"
-        }`}
-      >
-        {letter}
-      </button>
-    );
-  };
-
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center p-3 sm:p-6 select-none w-full max-w-2xl mx-auto">
-      {gameWon && <Confetti recycle={false} numberOfPieces={400} />}
+    <div className="relative min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-3 sm:p-6 overflow-x-hidden font-sans">
+      {/* Background Interactive Particle Canvas */}
+      <ParticleCanvas isShaking={isShaking} />
 
-      <div className="w-full bg-slate-950/85 backdrop-blur-xl border border-slate-800/90 rounded-3xl p-4 sm:p-7 shadow-2xl shadow-cyan-950/30 flex flex-col items-center">
-        {/* Top Control Bar */}
-        <div className="w-full flex justify-between items-center mb-3">
-          {/* Mute Toggle */}
-          <button
-            onClick={toggleMute}
-            className="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
-          >
-            {muted ? "🔇 Muted" : "🔊 Sound On"}
-          </button>
+      {/* INTRO SPLASH */}
+      {gameState === GameState.INTRO && (
+        <IntroSplash onEnter={() => setGameState(GameState.MENU)} />
+      )}
 
-          {/* Live Timer & Streak */}
-          <div className="flex items-center gap-2 sm:gap-3 text-xs font-bold">
-            <span className="bg-slate-900 border border-slate-800 px-2.5 py-1.5 rounded-xl text-cyan-400 font-mono">
-              ⏱️ {timeTaken}s
-            </span>
-            <span className="bg-amber-950/60 border border-amber-500/40 text-amber-300 px-2.5 py-1.5 rounded-xl">
-              🔥 Streak: {currentStreak}
-            </span>
+      {/* MAIN MENU */}
+      {gameState === GameState.MENU && (
+        <MainMenu
+          onStartGame={() => handleStartGame()}
+          onOpenHowToPlay={() => setActiveModal("HOW_TO_PLAY")}
+          onOpenProfile={() => setActiveModal("PROFILE")}
+          onOpenLeaderboard={() => setActiveModal("LEADERBOARD")}
+          onOpenSettings={() => setActiveModal("SETTINGS")}
+          musicMuted={settings.musicMuted}
+          sfxMuted={settings.sfxMuted}
+          onToggleMusic={handleToggleMusic}
+          onToggleSfx={handleToggleSfx}
+          profile={profile}
+          avatar={avatar}
+          playerName={playerName}
+        />
+      )}
+
+      {/* COUNTDOWN 3-2-1 */}
+      {gameState === GameState.COUNTDOWN && (
+        <CountdownOverlay onComplete={() => setGameState(GameState.PLAYING)} />
+      )}
+
+      {/* GAMEPLAY ARENA */}
+      {(gameState === GameState.PLAYING || gameState === GameState.PAUSED) && (
+        <main className="z-10 w-full max-w-lg bg-slate-950/85 backdrop-blur-xl border border-slate-800/90 rounded-3xl p-4 sm:p-6 shadow-2xl shadow-cyan-950/50 flex flex-col items-center animate-pop my-auto">
+          {/* Game HUD */}
+          <GameHUD
+            timeTaken={timeTaken}
+            currentStreak={currentStreak}
+            onPause={() => setGameState(GameState.PAUSED)}
+            musicMuted={settings.musicMuted}
+            sfxMuted={settings.sfxMuted}
+            onToggleMusic={handleToggleMusic}
+            onToggleSfx={handleToggleSfx}
+          />
+
+          {/* Category Tabs */}
+          <div className="flex gap-1.5 overflow-x-auto max-w-full pb-2 mb-2 no-scrollbar">
+            {Object.keys(categories).map((catName) => {
+              const isSelected = category === catName;
+              return (
+                <button
+                  key={catName}
+                  onClick={() => {
+                    playSound("click");
+                    setCategory(catName);
+                    prepareNewWord(catName);
+                  }}
+                  className={`px-3 py-1 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+                    isSelected
+                      ? "bg-cyan-400 text-slate-950 shadow-md shadow-cyan-400/20"
+                      : "bg-slate-900 border border-slate-800 text-slate-400 hover:text-white"
+                  }`}
+                >
+                  {catName}
+                </button>
+              );
+            })}
           </div>
 
-          {/* Leaderboard Trigger */}
-          <button
-            onClick={() => setIsLeaderboardOpen(true)}
-            className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 text-xs font-extrabold flex items-center gap-1 transition shadow-md shadow-amber-500/20 cursor-pointer"
-          >
-            🏆 Leaderboard
-          </button>
-        </div>
+          {/* Stickman Gallows Vector SVG Canvas */}
+          <div className="w-full flex justify-center my-2">
+            <HangmanCanvas wrongGuessCount={wrongGuessCount} maxAttempts={maxAttempts} />
+          </div>
 
-        {/* Header Title */}
-        <header className="text-center w-full mb-2">
-          <h1 className="text-2xl sm:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-cyan-200 to-indigo-200 tracking-tight">
-            Hangman Escape
-          </h1>
-          <p className="text-slate-400 text-xs sm:text-sm mt-1 max-w-md mx-auto">
-            Guess the mystery word to save the stickman before the trapdoor drops!
-          </p>
+          {/* Dynamic Status / Farewell Hint Banner */}
+          <div className="my-2 min-h-[36px] flex items-center justify-center text-center">
+            {wrongGuessCount > 0 && !gameWon && !gameLost ? (
+              <span className="text-xs font-semibold text-amber-300 bg-amber-950/60 border border-amber-500/30 px-3 py-1 rounded-full animate-pop">
+                ⚠️ {getFarewellText(wrongGuessCount)}
+              </span>
+            ) : (
+              <span className="text-xs text-slate-400">
+                Guess letters to rescue the hero ({maxAttempts - wrongGuessCount} attempts left)
+              </span>
+            )}
+          </div>
 
-          {/* Category Selector Tabs */}
-          <div className="flex justify-center flex-wrap gap-1.5 mt-3">
-            {Object.keys(wordCategories).map((cat) => (
-              <button
-                key={cat}
-                onClick={() => reGame(cat)}
-                className={`px-3 py-1 rounded-full text-xs font-bold transition cursor-pointer border ${
-                  category === cat
-                    ? "bg-cyan-500 text-slate-950 border-cyan-400 shadow-md shadow-cyan-500/20"
-                    : "bg-slate-900/80 text-slate-400 border-slate-800 hover:text-white"
-                }`}
-              >
-                {cat}
-              </button>
+          {/* Word Mystery Letter Boxes */}
+          <div className="flex gap-2 justify-center flex-wrap my-4">
+            {currentWord.split("").map((letter, idx) => {
+              const isGuessed = guessedLetters.has(letter);
+              return (
+                <div
+                  key={idx}
+                  className={`w-9 h-12 sm:w-11 sm:h-14 rounded-xl flex items-center justify-center font-black text-xl sm:text-2xl border-2 transition-all duration-300 ${
+                    isGuessed
+                      ? "bg-emerald-950/80 border-emerald-400 text-emerald-300 shadow-md shadow-emerald-500/20"
+                      : "bg-slate-900 border-slate-800 text-transparent"
+                  }`}
+                >
+                  {isGuessed ? letter.toUpperCase() : ""}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* QWERTY Virtual Keyboard */}
+          <div className="w-full space-y-1.5 mt-2">
+            {keyboardRows.map((row, rowIdx) => (
+              <div key={rowIdx} className="flex justify-center gap-1 sm:gap-1.5">
+                {row.map((letter) => {
+                  const isGuessed = guessedLetters.has(letter);
+                  const isCorrect = isGuessed && currentWord.includes(letter);
+                  const isWrong = isGuessed && !currentWord.includes(letter);
+
+                  let btnStyle =
+                    "bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-md shadow-amber-400/20 border-b-2 border-amber-600";
+                  if (isCorrect) {
+                    btnStyle = "bg-emerald-500 text-slate-950 border-b-2 border-emerald-700 opacity-80";
+                  } else if (isWrong) {
+                    btnStyle = "bg-slate-900 text-slate-600 border border-slate-800 opacity-40 line-through";
+                  }
+
+                  return (
+                    <button
+                      key={letter}
+                      disabled={isGuessed}
+                      onClick={() => handleGuess(letter)}
+                      className={`flex-1 max-w-[36px] sm:max-w-[42px] h-10 sm:h-11 rounded-xl font-black text-sm sm:text-base uppercase transition-all duration-150 active:scale-95 cursor-pointer ${btnStyle}`}
+                    >
+                      {letter}
+                    </button>
+                  );
+                })}
+              </div>
             ))}
           </div>
-        </header>
+        </main>
+      )}
 
-        {/* Vector Gallows Character Illustration */}
-        <HangmanCanvas
-          wrongGuessCount={wrongGuessCount}
-          maxAttempts={maxAttempts}
-          gameWon={gameWon}
-          gameLost={gameLost}
+      {/* PAUSE OVERLAY */}
+      {gameState === GameState.PAUSED && (
+        <PauseOverlay
+          onResume={() => setGameState(GameState.PLAYING)}
+          onRestart={() => handleStartGame()}
+          onOpenSettings={() => setActiveModal("SETTINGS")}
+          onMainMenu={() => setGameState(GameState.MENU)}
         />
+      )}
 
-        {/* Dynamic Status Section */}
-        <section className="w-full max-w-md min-h-[64px] flex items-center justify-center my-1">
-          {gameWon && (
-            <div className="w-full animate-pop bg-gradient-to-r from-emerald-900/90 to-teal-900/90 border-2 border-emerald-400/80 text-emerald-100 rounded-2xl p-3 text-center shadow-lg shadow-emerald-950 flex flex-col items-center">
-              <h2 className="text-base sm:text-lg font-bold text-emerald-300">
-                🎉 Hero Rescued! Score: {lastScore} pts
-              </h2>
-              <p className="text-xs text-emerald-200/90 mt-0.5 mb-2">
-                Awesome speed! Saved in {timeTaken} seconds!
-              </p>
-              <button
-                onClick={() => setIsLeaderboardOpen(true)}
-                className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold px-3 py-1 rounded-lg transition shadow cursor-pointer"
-              >
-                View High Scores 🏆
-              </button>
-            </div>
-          )}
+      {/* GAME OVER MODAL */}
+      {gameState === GameState.GAME_OVER && (
+        <GameOverModal
+          gameWon={gameWon}
+          currentWord={currentWord}
+          lastScore={lastScore}
+          timeTaken={timeTaken}
+          resultMeta={resultMeta}
+          onPlayAgain={() => handleStartGame()}
+          onMainMenu={() => setGameState(GameState.MENU)}
+        />
+      )}
 
-          {gameLost && (
-            <div className="w-full animate-shake bg-gradient-to-r from-rose-950/90 to-red-900/90 border-2 border-rose-500/80 text-rose-100 rounded-2xl p-3 text-center shadow-lg shadow-rose-950">
-              <h2 className="text-base sm:text-lg font-bold text-rose-300">
-                💀 Game Over! The word was: <span className="underline uppercase font-mono">{currentWord}</span>
-              </h2>
-              <p className="text-xs text-rose-200/90 mt-0.5">
-                The trapdoor dropped! Don't give up, try another round!
-              </p>
-            </div>
-          )}
-
-          {!gameOver && isLastGuessIncorrect && (
-            <div className="w-full animate-pop bg-amber-950/80 border-2 border-dashed border-amber-500/60 text-amber-200 rounded-2xl p-2.5 text-center text-xs font-medium italic flex items-center justify-center gap-2">
-              <span>⚠️</span>
-              <span>{getFarewellText(wrongGuessCount)}</span>
-            </div>
-          )}
-
-          {!gameOver && !isLastGuessIncorrect && (
-            <div className="w-full bg-slate-900/60 border border-slate-800/60 text-slate-400 rounded-2xl p-2 text-center text-xs italic">
-              Tap or type letters to save the stickman... ({attemptsRemaining} attempts left)
-            </div>
-          )}
-        </section>
-
-        {/* Word Mystery Letter Boxes */}
-        <section className="flex justify-center flex-wrap gap-1.5 sm:gap-2 my-3 max-w-full px-1">
-          {letterElements}
-        </section>
-
-        {/* Onscreen Virtual QWERTY Keyboard */}
-        <section className="w-full max-w-md mx-auto mt-2 flex flex-col gap-1.5 sm:gap-2 px-1">
-          {keyboardRows.map((row, rowIndex) => (
-            <div key={rowIndex} className="flex justify-center gap-1 sm:gap-1.5 w-full">
-              {row.map((letter) => renderKeyButton(letter))}
-            </div>
-          ))}
-        </section>
-
-        {/* New Game Button */}
-        {gameOver && (
-          <section className="mt-5 w-full flex justify-center animate-pop">
-            <button
-              onClick={() => reGame()}
-              className="bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 text-slate-950 font-extrabold text-sm sm:text-base py-3 px-8 rounded-2xl shadow-lg shadow-cyan-500/25 transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-2 cursor-pointer border border-cyan-300/50"
-            >
-              <span>Play Again</span>
-              <span className="text-xs font-normal opacity-80">(Press Enter ↵)</span>
-            </button>
-          </section>
-        )}
-      </div>
-
-      {/* Leaderboard Modal */}
-      <LeaderboardModal
-        isOpen={isLeaderboardOpen}
-        onClose={() => setIsLeaderboardOpen(false)}
-        onDataChange={() => {
-          const stats = getLeaderboardData().stats;
-          if (stats) setCurrentStreak(stats.currentStreak || 0);
-        }}
+      {/* MODALS */}
+      <HowToPlayModal
+        isOpen={activeModal === "HOW_TO_PLAY"}
+        onClose={() => setActiveModal(null)}
+        onStartGame={() => handleStartGame()}
       />
-    </main>
+
+      <ProfileModal
+        isOpen={activeModal === "PROFILE"}
+        onClose={() => setActiveModal(null)}
+        onDataChange={refreshProfileAndData}
+      />
+
+      <SettingsModal
+        isOpen={activeModal === "SETTINGS"}
+        onClose={() => setActiveModal(null)}
+        musicMuted={settings.musicMuted}
+        sfxMuted={settings.sfxMuted}
+        onToggleMusic={handleToggleMusic}
+        onToggleSfx={handleToggleSfx}
+        screenShake={settings.screenShake}
+        onToggleScreenShake={handleToggleScreenShake}
+      />
+
+      <LeaderboardModal
+        isOpen={activeModal === "LEADERBOARD"}
+        onClose={() => setActiveModal(null)}
+        onDataChange={refreshProfileAndData}
+      />
+    </div>
   );
 }
