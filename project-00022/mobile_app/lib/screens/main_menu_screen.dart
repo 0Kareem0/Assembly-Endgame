@@ -5,6 +5,9 @@ import '../services/audio_service.dart';
 import '../services/storage_service.dart';
 import '../widgets/cyber_button.dart';
 import '../widgets/particle_canvas.dart';
+import '../widgets/how_to_play_dialog.dart';
+import '../widgets/profile_dialog.dart';
+import '../widgets/leaderboard_dialog.dart';
 import 'game_screen.dart';
 import 'settings_screen.dart';
 
@@ -38,6 +41,38 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
         _playerName = n;
       });
     }
+  }
+
+  void _openHowToPlay() {
+    showDialog(
+      context: context,
+      builder: (context) => HowToPlayDialogWidget(
+        onStartGame: () {
+          Navigator.of(context).pop();
+          Navigator.of(context).push(
+            FadeScalePageRoute(page: const GameScreen()),
+          );
+        },
+      ),
+    );
+  }
+
+  void _openProfile() {
+    showDialog(
+      context: context,
+      builder: (context) => ProfileDialogWidget(
+        onDataChanged: _loadProfile,
+      ),
+    );
+  }
+
+  void _openLeaderboard() {
+    showDialog(
+      context: context,
+      builder: (context) => LeaderboardDialog(
+        onDataChanged: _loadProfile,
+      ),
+    );
   }
 
   @override
@@ -74,31 +109,35 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: AppColors.card,
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: Colors.white10),
-                            ),
-                            child: Row(
-                              children: [
-                                Text(_avatar, style: const TextStyle(fontSize: 18)),
-                                const SizedBox(width: 8),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      _playerName,
-                                      style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
-                                    ),
-                                    Text(
-                                      "Level ${_profile.level}",
-                                      style: const TextStyle(color: AppColors.cyanPrimary, fontSize: 9, fontWeight: FontWeight.w800),
-                                    ),
-                                  ],
-                                ),
-                              ],
+                          InkWell(
+                            onTap: _openProfile,
+                            borderRadius: BorderRadius.circular(14),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: AppColors.card,
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(color: Colors.white10),
+                              ),
+                              child: Row(
+                                children: [
+                                  Text(_avatar, style: const TextStyle(fontSize: 18)),
+                                  const SizedBox(width: 8),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        _playerName,
+                                        style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                                      ),
+                                      Text(
+                                        "Level ${_profile.level}",
+                                        style: const TextStyle(color: AppColors.cyanPrimary, fontSize: 9, fontWeight: FontWeight.w800),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
 
@@ -120,7 +159,7 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
                         ],
                       ),
 
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 16),
 
                       // Logo & Title
                       Container(
@@ -142,14 +181,14 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
                           child: const Text("🪢", style: TextStyle(fontSize: 36)),
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 10),
 
                       const Text(
                         "Hangman Escape",
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: AppColors.amberLight,
-                          fontSize: 30,
+                          fontSize: 28,
                           fontWeight: FontWeight.w900,
                           letterSpacing: -0.5,
                         ),
@@ -160,7 +199,7 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
                         textAlign: TextAlign.center,
                         style: TextStyle(color: AppColors.textMuted, fontSize: 12),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 20),
 
                       // Menu Buttons
                       CyberButton(
@@ -172,6 +211,32 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
                             FadeScalePageRoute(page: const GameScreen()),
                           );
                         },
+                      ),
+                      const SizedBox(height: 10),
+
+                      CyberButton(
+                        label: "How To Play",
+                        icon: "📖",
+                        subtitle: "Guide & Rules ➔",
+                        onTap: _openHowToPlay,
+                      ),
+                      const SizedBox(height: 10),
+
+                      CyberButton(
+                        label: "Profile & XP",
+                        icon: "👤",
+                        subtitle: "Lvl ${_profile.level} • Badges ➔",
+                        subtitleColor: AppColors.cyanPrimary,
+                        onTap: _openProfile,
+                      ),
+                      const SizedBox(height: 10),
+
+                      CyberButton(
+                        label: "Hall of Fame",
+                        icon: "🏆",
+                        subtitle: "High Scores ➔",
+                        subtitleColor: AppColors.amberAccent,
+                        onTap: _openLeaderboard,
                       ),
                       const SizedBox(height: 10),
 
