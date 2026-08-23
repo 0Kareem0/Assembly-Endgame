@@ -11,6 +11,7 @@ import ProfileModal from "./components/ProfileModal";
 import SettingsModal from "./components/SettingsModal";
 import GameOverModal from "./components/GameOverModal";
 import LeaderboardModal from "./components/LeaderboardModal";
+import DownloadModal from "./components/DownloadModal";
 import HangmanCanvas from "./components/HangmanCanvas";
 import { categories, getFarewellText, calculateScore } from "./utils";
 import {
@@ -40,7 +41,7 @@ const GameState = {
 
 export default function App() {
   const [gameState, setGameState] = useState(GameState.INTRO);
-  const [activeModal, setActiveModal] = useState(null); // 'HOW_TO_PLAY', 'PROFILE', 'SETTINGS', 'LEADERBOARD'
+  const [activeModal, setActiveModal] = useState(null); // 'HOW_TO_PLAY', 'PROFILE', 'SETTINGS', 'LEADERBOARD', 'DOWNLOAD'
 
   // Settings
   const [settings, setSettingsState] = useState(() => getSettings());
@@ -254,6 +255,28 @@ export default function App() {
       {/* Background Interactive Particle Canvas */}
       <ParticleCanvas isShaking={isShaking} />
 
+      {/* Top Banner: Get Mobile App */}
+      <header className="z-20 w-full max-w-xl mb-3">
+        <div className="w-full bg-slate-900/90 backdrop-blur-md border border-emerald-500/30 rounded-2xl px-4 py-2 flex items-center justify-between shadow-lg shadow-emerald-950/20">
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-lg">📱</span>
+            <div>
+              <span className="font-bold text-white">Play on Mobile!</span>{" "}
+              <span className="text-slate-400 hidden sm:inline">Get the Android App (.APK)</span>
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              playSound("click");
+              setActiveModal("DOWNLOAD");
+            }}
+            className="bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-black text-xs py-1.5 px-3 rounded-xl transition shadow cursor-pointer"
+          >
+            Download APK 📥
+          </button>
+        </div>
+      </header>
+
       {/* INTRO SPLASH */}
       {gameState === GameState.INTRO && (
         <IntroSplash onEnter={() => setGameState(GameState.MENU)} />
@@ -267,6 +290,7 @@ export default function App() {
           onOpenProfile={() => setActiveModal("PROFILE")}
           onOpenLeaderboard={() => setActiveModal("LEADERBOARD")}
           onOpenSettings={() => setActiveModal("SETTINGS")}
+          onOpenDownload={() => setActiveModal("DOWNLOAD")}
           musicMuted={settings.musicMuted}
           sfxMuted={settings.sfxMuted}
           onToggleMusic={handleToggleMusic}
@@ -442,6 +466,11 @@ export default function App() {
         isOpen={activeModal === "LEADERBOARD"}
         onClose={() => setActiveModal(null)}
         onDataChange={refreshProfileAndData}
+      />
+
+      <DownloadModal
+        isOpen={activeModal === "DOWNLOAD"}
+        onClose={() => setActiveModal(null)}
       />
     </div>
   );

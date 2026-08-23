@@ -6,6 +6,7 @@ export default function MainMenu({
   onOpenProfile,
   onOpenLeaderboard,
   onOpenSettings,
+  onOpenDownload,
   musicMuted,
   sfxMuted,
   onToggleMusic,
@@ -55,7 +56,7 @@ export default function MainMenu({
       </div>
 
       {/* Main Title Badge */}
-      <div className="text-center mb-8">
+      <div className="text-center mb-6">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/80 border border-cyan-500/30 text-cyan-400 text-xs font-bold uppercase tracking-wider mb-2">
           <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
           Ready For Challenge
@@ -70,13 +71,30 @@ export default function MainMenu({
 
       {/* Main Menu Action Buttons */}
       <div className="w-full flex flex-col gap-3">
-        {/* START GAME BUTTON */}
+        {/* PLAY WEB GAME BUTTON */}
         <button
           onClick={() => handleAction(onStartGame)}
-          className="w-full bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-600 hover:from-cyan-300 hover:to-indigo-500 text-slate-950 font-black text-lg py-4 px-6 rounded-2xl shadow-xl shadow-cyan-500/25 transition-all duration-200 hover:scale-105 active:scale-95 flex items-center justify-center gap-3 cursor-pointer border border-cyan-300/40"
+          className="w-full bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-600 hover:from-cyan-300 hover:to-indigo-500 text-slate-950 font-black text-lg py-3.5 px-6 rounded-2xl shadow-xl shadow-cyan-500/25 transition-all duration-200 hover:scale-105 active:scale-95 flex items-center justify-center gap-3 cursor-pointer border border-cyan-300/40"
         >
           <span className="text-2xl">🎮</span>
-          <span>START GAME</span>
+          <span>PLAY IN BROWSER</span>
+        </button>
+
+        {/* DOWNLOAD MOBILE APP BUTTON */}
+        <button
+          onClick={() => handleAction(onOpenDownload)}
+          className="w-full bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-600 hover:from-emerald-400 hover:to-cyan-500 text-slate-950 font-black text-sm py-3 px-6 rounded-2xl shadow-lg shadow-emerald-500/20 transition-all duration-200 hover:scale-[1.02] flex items-center justify-between cursor-pointer border border-emerald-300/40"
+        >
+          <div className="flex items-center gap-2.5">
+            <span className="text-xl">📱</span>
+            <div className="text-left leading-tight">
+              <div>DOWNLOAD ANDROID APP</div>
+              <div className="text-[10px] opacity-90 font-mono font-bold">Google Drive APK</div>
+            </div>
+          </div>
+          <span className="text-xs bg-slate-950/40 px-2.5 py-1 rounded-xl text-emerald-200 font-extrabold">
+            Get APK ➔
+          </span>
         </button>
 
         {/* HOW TO PLAY */}
@@ -129,8 +147,8 @@ export default function MainMenu({
       </div>
 
       {/* Footer copyright / info */}
-      <div className="mt-8 text-[11px] text-slate-500 font-mono text-center">
-        Hangman Escape v2.0 • Cyber Edition
+      <div className="mt-6 text-[11px] text-slate-500 font-mono text-center">
+        Hangman Escape v2.0 • Web & Android Edition
       </div>
     </div>
   );
