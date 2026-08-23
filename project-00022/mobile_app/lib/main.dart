@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'screens/game_screen.dart';
+import 'core/constants/app_theme.dart';
+import 'screens/splash_screen.dart';
+import 'services/audio_service.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await AudioService.init();
   runApp(const HangmanEscapeApp());
 }
 
@@ -15,18 +17,8 @@ class HangmanEscapeApp extends StatelessWidget {
     return MaterialApp(
       title: 'Hangman Escape',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF060913),
-        colorScheme: const ColorScheme.dark(
-          primary: Color(0xFF38BDF8),
-          secondary: Color(0xFFF59E0B),
-          surface: Color(0xFF0F172A),
-        ),
-        textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme),
-        useMaterial3: true,
-      ),
-      home: const GameScreen(),
+      theme: AppTheme.darkTheme,
+      home: const SplashScreen(),
     );
   }
 }
