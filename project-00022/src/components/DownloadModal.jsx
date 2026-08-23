@@ -3,8 +3,8 @@ import { playSound } from "../utils/sound";
 export default function DownloadModal({ isOpen, onClose }) {
   if (!isOpen) return null;
 
-  // Google Drive download URL (configurable)
-  const googleDriveUrl = "https://drive.google.com/file/d/1_YOUR_GOOGLE_DRIVE_FILE_ID_HERE/view?usp=sharing";
+  // Official Google Drive download URL for Hangman Escape Android APK
+  const googleDriveUrl = "https://drive.google.com/file/d/1MuOA4XXaGnSHq-kOfJPeE9GjGxPcTLbZ/view?usp=drive_link";
 
   const handleDownload = () => {
     playSound("click");
@@ -57,7 +57,7 @@ export default function DownloadModal({ isOpen, onClose }) {
           </div>
           <div className="flex justify-between items-center">
             <span className="text-slate-500">File Size:</span>
-            <span className="text-slate-200 font-bold">50.0 MB</span>
+            <span className="text-slate-200 font-bold">50.4 MB</span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-slate-500">Host Server:</span>
